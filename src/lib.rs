@@ -5,7 +5,7 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! SCD30 trait implementing basic SCD30 CO2 sensor operations
+//! SCD30 trait implementing basic SCD30 I2C CO2 sensor operations
 //!
 //! Operations taken from [interface description](https://sensirion.com/media/documents/D7CEEF4A/6165372F/Sensirion_CO2_Sensors_SCD30_Interface_Description.pdf)
 //!

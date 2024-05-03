@@ -1,7 +1,9 @@
 [package]
-name = "scd30_rust"
+name = "scd30_i2c"
 version = "0.1.0"
 edition = "2021"
+description="Rust Trait for SCD30 device I2C interface related operations."
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -56,7 +56,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "scd30_rust"
+name = "scd30_i2c"
 version = "0.1.0"
 dependencies = [
  "i2cdev",
