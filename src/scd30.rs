@@ -1,3 +1,10 @@
+// Copyright 2024, F. Stan
+//
+// Licensed under the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>,
+// This file may not be copied, modified, or distributed
+// except according to those terms.
+
 use i2cdev::core::*;
 use i2cdev::linux::{LinuxI2CDevice, LinuxI2CError};
 use std::error::Error;
@@ -5,20 +12,30 @@ use std::fmt;
 use std::io;
 use std::{thread, time};
 
+///
+///SCD30 error enum, including Io error from
+///i2cdev library. ChecksumError when a crc 8
+///checksum does not correspond with the calculated
+///one. CommunicationError when read or write operations
+///fails
+///
 #[derive(Debug)]
 pub enum Scd30Error {
     /// Input/output error
     Io(io::Error),
+    /// ChecksumError when the checksum does not correspond to calculated checksum using crc
+    /// algorithm
     ChecksumError,
+    /// Communication error when the trait tries to read or write to scd30 device
     ComunicationError,
 }
-
+///Implementation for Io error to Scd30Error
 impl From<io::Error> for Scd30Error {
     fn from(e: io::Error) -> Self {
         Scd30Error::Io(e)
     }
 }
-
+///Implementation of display for SCD30Error
 impl fmt::Display for Scd30Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -28,19 +45,37 @@ impl fmt::Display for Scd30Error {
         }
     }
 }
-
+///Implementation for Error to SCD30
 impl Error for Scd30Error {}
 
+/// SCD30 Struct, wraps a LinuxI2CDevice structs
+/// and has implemented related SCD30 operations
+///
 pub struct Scd30 {
-    i2cdev: LinuxI2CDevice,
+    pub i2cdev: LinuxI2CDevice,
 }
 
+/// Implementation of SCD30 related
+/// operations
+///
+///
 impl Scd30 {
+    /// Create a new SCD30 Struct
+    ///
+    /// Tries to create the device on standard address 0x61.
+    /// If fails, return an LinuxI2CError from i2cdev
+    ///
     pub fn new() -> Result<Scd30, LinuxI2CError> {
         let device = LinuxI2CDevice::new("/dev/i2c-1", 0x61)?;
         Ok(Scd30 { i2cdev: device })
     }
-    //** Checksum checker function */
+
+    /// Checksum checker function
+    /// Thanks to [RequestForCoffee](https://github.com/RequestForCoffee)
+    /// for the python version of scd30 communication.
+    /// This code is an adaptation of the python version.
+    /// More info regarding the [algorithm](https://en.wikipedia.org/wiki/Computation_of_cyclic_redundancy_checks)
+    ///
     pub fn crc8(message: &Vec<u8>) -> u8 {
         let mut rem = 0xFF;
         let polynomial = 0x31;
@@ -58,49 +93,102 @@ impl Scd30 {
         rem
     }
 
-    pub fn check_firmware(&mut self) -> u16 {
-        let mut buffer: [u8; 2] = [0xd1, 0x00];
-        self.i2cdev.write(&mut buffer).unwrap();
-        let ten_millis = time::Duration::from_millis(30);
-        thread::sleep(ten_millis);
-        // Read data from the selected register
-        let mut data_buffer: [u8; 3] = [0; 3];
-        self.i2cdev.read(&mut data_buffer).unwrap();
-        println!("Data buffer {:?}", data_buffer);
-        if data_buffer[2] == Scd30::crc8(&vec![data_buffer[0], data_buffer[1]]) {
-            println!("Check correcto");
-        } else {
-            println!("Fallo en check");
+    /// Checks on 4 bytes data if the checksum is correct
+    ///
+    /// The parameter is a 6 byte array, the first two and the checksum
+    /// and the other two with the ckecksum
+    ///
+    fn check_crc_in_bytes(co2: &[u8]) -> bool {
+        //Splited in two two bytes with checksum
+        let first_crc = Scd30::crc8(&vec![co2[0], co2[1]]);
+        let second_crc = Scd30::crc8(&vec![co2[3], co2[4]]);
+
+        first_crc == co2[2] && second_crc == co2[5]
+    }
+
+    /// Checks the firmware version of the SCD30 device.
+    /// If fails, return SCD30Error.
+    /// Else returns the firmware version.
+    ///
+    pub fn check_firmware(&mut self) -> Result<u16, Scd30Error> {
+        let buffer: [u8; 2] = [0xd1, 0x00];
+        match self.i2cdev.write(&buffer) {
+            Ok(_) => {
+                let ten_millis = time::Duration::from_millis(30);
+                thread::sleep(ten_millis);
+                // Read data from the selected register
+                let mut data_buffer: [u8; 3] = [0; 3];
+                match self.i2cdev.read(&mut data_buffer) {
+                    Ok(_) => {
+                        if data_buffer[2] == Scd30::crc8(&vec![data_buffer[0], data_buffer[1]]) {
+                            Ok(u16::from_be_bytes([data_buffer[0], data_buffer[1]]))
+                        } else {
+                            Err(Scd30Error::ChecksumError)
+                        }
+                    }
+                    Err(_) => Err(Scd30Error::ComunicationError),
+                }
+            }
+
+            Err(_) => Err(Scd30Error::ComunicationError),
         }
-        u16::from_be_bytes([data_buffer[0], data_buffer[1]])
     }
 
-    pub fn trigger_cont_measurements(&mut self) {
-        let mut buffer: [u8; 5] = [0x00, 0x10, 0x00, 0x00, 0x81];
-        self.i2cdev.write(&mut buffer).unwrap();
-        let ten_millis = time::Duration::from_millis(30);
-        thread::sleep(ten_millis);
+    /// Trigger the continous measurements for SCD30 device.
+    /// If fails return a communication error.
+    /// If succeds, does not return anything.
+    ///
+    pub fn trigger_cont_measurements(&mut self) -> Result<(), Scd30Error> {
+        let buffer: [u8; 5] = [0x00, 0x10, 0x00, 0x00, 0x81];
+        match self.i2cdev.write(&buffer) {
+            Ok(_) => {
+                let ten_millis = time::Duration::from_millis(30);
+                thread::sleep(ten_millis);
+                Ok(())
+            }
+            Err(_) => Err(Scd30Error::ComunicationError),
+        }
     }
 
-    pub fn stop_cont_measurements(&mut self) {
-        let mut buffer: [u8; 2] = [0x01, 0x01];
-        self.i2cdev.write(&mut buffer).unwrap();
-        let ten_millis = time::Duration::from_millis(30);
-        thread::sleep(ten_millis);
+    /// Stops the continous measurements for SCD30 device.
+    /// If fails return a communication error.
+    /// If succeds, does not return anything.
+    ///
+    pub fn stop_cont_measurements(&mut self) -> Result<(), Scd30Error> {
+        let buffer: [u8; 2] = [0x01, 0x01];
+        match self.i2cdev.write(&buffer) {
+            Ok(_) => {
+                let ten_millis = time::Duration::from_millis(30);
+                thread::sleep(ten_millis);
+                Ok(())
+            }
+            Err(_) => Err(Scd30Error::ComunicationError),
+        }
     }
 
-    pub fn set_measurements_interval(&mut self, seconds: u16) {
+    /// Sets the measurements interval for the device,
+    /// the default is 2 seconds. You can change it using the second parameter
+    ///
+    pub fn set_measurements_interval(&mut self, seconds: u16) -> Result<(), Scd30Error> {
         let time_in_bytes: [u8; 2] = seconds.to_be_bytes();
         let checksum = Scd30::crc8(&vec![time_in_bytes[0], time_in_bytes[1]]);
-        let mut buffer: [u8; 5] = [0x46, 0x00, time_in_bytes[0], time_in_bytes[1], checksum];
-        self.i2cdev.write(&mut buffer).unwrap();
-        let ten_millis = time::Duration::from_millis(30);
-        thread::sleep(ten_millis);
+        let buffer: [u8; 5] = [0x46, 0x00, time_in_bytes[0], time_in_bytes[1], checksum];
+        match self.i2cdev.write(&buffer) {
+            Ok(_) => {
+                let ten_millis = time::Duration::from_millis(30);
+                thread::sleep(ten_millis);
+                Ok(())
+            }
+            Err(_) => Err(Scd30Error::ComunicationError),
+        }
     }
 
+    /// Get CO2, Temperature and Humidity for the device as a f32 tuple.
+    /// Checks the checksum for each pair of bytes, if everything ok returns the tuple.
+    /// In case of any problem, returns the error.
     pub fn get_measurements(&mut self) -> Result<(f32, f32, f32), Scd30Error> {
-        let mut buffer: [u8; 2] = [0x03, 0x00];
-        match self.i2cdev.write(&mut buffer) {
+        let buffer: [u8; 2] = [0x03, 0x00];
+        match self.i2cdev.write(&buffer) {
             Ok(_) => {
                 let ten_millis = time::Duration::from_millis(30);
                 thread::sleep(ten_millis);
@@ -144,13 +232,5 @@ impl Scd30 {
             }
             Err(_) => Err(Scd30Error::ComunicationError),
         }
-    }
-
-    fn check_crc_in_bytes(co2: &[u8]) -> bool {
-        //Splited in two two bytes with checksum
-        let first_crc = Scd30::crc8(&vec![co2[0], co2[1]]);
-        let second_crc = Scd30::crc8(&vec![co2[3], co2[4]]);
-
-        first_crc == co2[2] && second_crc == co2[5]
     }
 }

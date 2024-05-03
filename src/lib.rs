@@ -1,14 +1,57 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+// Copyright 2024, F. Stan
+//
+// Licensed under the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>,
+// This file may not be copied, modified, or distributed
+// except according to those terms.
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+//! SCD30 trait implementing basic SCD30 CO2 sensor operations
+//!
+//! Operations taken from [interface description](https://sensirion.com/media/documents/D7CEEF4A/6165372F/Sensirion_CO2_Sensors_SCD30_Interface_Description.pdf)
+//!
+//! **IMPORTANT**
+//! Current version 0.1.0 contains basics operations, some advanced ones like calibration not yet
+//! implemented
+//!
+//! ## Basic Example
+//!
+//! Obtaining measurements, co2, temperature and humidity
+//!
+//!
+//!```
+//!mod scd30;
+//!use scd30::Scd30;
+//!use std::thread;
+//!use std::time::Duration;
+//!
+//!fn main() {
+//!    // Open the I2C device
+//!    let mut scd = Scd30::new().unwrap();
+//!    let mut counter = 0;
+//!    scd.trigger_cont_measurements();
+//!
+//!    scd.set_measurements_interval(2);
+//!
+//!    loop {
+//!        match scd.get_measurements() {
+//!            Ok((a, b, c)) => {
+//!                println!("Co2: {} ppm Temp: {} C RH: {} %", a, b, c);
+//!                thread::sleep(Duration::from_secs(2));
+//!                counter += 1;
+//!                println!("{}", counter);
+//!            }
+//!            Err(e) => {
+//!                println!(
+//!                    "Error obtaining measurements. More details: {}. Waiting 10 seconds for recovering",
+//!                    e
+//!                );
+//!                thread::sleep(Duration::from_secs(10));
+//!            }
+//!        }
+//!    }
+//!}
+//!```
+//!
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+/// Trait implementing SCD30 device related operations
+pub mod scd30;
