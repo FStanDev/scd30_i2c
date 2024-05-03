@@ -41,7 +41,7 @@ impl fmt::Display for Scd30Error {
         match *self {
             Scd30Error::ChecksumError => fmt::Display::fmt("Checksum Error found", f),
             Scd30Error::Io(ref e) => fmt::Display::fmt(e, f),
-            Scd30Error::ComunicationError => fmt::Display::fmt("Comunicarion error with device", f),
+            Scd30Error::ComunicationError => fmt::Display::fmt("Comunication error with device", f),
         }
     }
 }

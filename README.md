@@ -3,15 +3,16 @@
 Operations taken from [interface description](https://sensirion.com/media/documents/D7CEEF4A/6165372F/Sensirion_CO2_Sensors_SCD30_Interface_Description.pdf)
 
 **IMPORTANT**
-Current version 0.1.0 contains basics operations, some advanced ones like calibration not yet implemented
+Current version 0.1.1 contains basics operations, some advanced ones like calibration not yet implemented
 
 ## Basic Example
+
+In your Cargo.toml `scd30_i2c="0.1.1"`
 
 Obtaining measurements, co2, temperature and humidity
 
 ```
-mod scd30;
-use scd30::Scd30;
+use scd30_i2c::scd30::Scd30;
 use std::thread;
 use std::time::Duration;
 

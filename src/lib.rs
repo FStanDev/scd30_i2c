@@ -19,8 +19,7 @@
 //!
 //!
 //!```
-//!mod scd30;
-//!use scd30::Scd30;
+//!use scd30_i2c::scd30::Scd30;
 //!use std::thread;
 //!use std::time::Duration;
 //!
