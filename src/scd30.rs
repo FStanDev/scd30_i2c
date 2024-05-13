@@ -183,6 +183,35 @@ impl Scd30 {
         }
     }
 
+    /// Gets if the device is ready for reading
+    /// a measurement. If not, returns false.
+    /// If error, returns the error.
+    pub fn get_data_ready(&mut self) -> Result<bool, Scd30Error> {
+        let buffer: [u8; 2] = [0x02, 0x02];
+        match self.i2cdev.write(&buffer) {
+            Ok(_) => {
+                let thirty_millis = time::Duration::from_millis(30);
+                thread::sleep(thirty_millis);
+                let mut data_buffer: [u8; 3] = [0; 3];
+                match self.i2cdev.read(&mut data_buffer) {
+                    Ok(_) => {
+                        if Scd30::crc8(&vec![data_buffer[0], data_buffer[1]]) == data_buffer[2] {
+                            if data_buffer[1] == 0x01 {
+                                Ok(true)
+                            } else {
+                                Ok(false)
+                            }
+                        } else {
+                            Err(Scd30Error::ChecksumError)
+                        }
+                    }
+                    Err(_) => Err(Scd30Error::ComunicationError),
+                }
+            }
+            Err(_) => Err(Scd30Error::ComunicationError),
+        }
+    }
+
     /// Get CO2, Temperature and Humidity for the device as a f32 tuple.
     /// Checks the checksum for each pair of bytes, if everything ok returns the tuple.
     /// In case of any problem, returns the error.
