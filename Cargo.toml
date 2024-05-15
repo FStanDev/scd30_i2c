@@ -4,6 +4,7 @@ version = "0.1.2"
 edition = "2021"
 description="Rust Trait for SCD30 device I2C interface related operations."
 license = "MIT"
+repository = "https://github.com/FStanDev/scd30_i2c"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
