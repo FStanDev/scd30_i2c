@@ -3,11 +3,19 @@
 Operations taken from [interface description](https://sensirion.com/media/documents/D7CEEF4A/6165372F/Sensirion_CO2_Sensors_SCD30_Interface_Description.pdf)
 
 **IMPORTANT**
-Current version 0.1.1 contains basics operations, some advanced ones like calibration not yet implemented
+Current version 0.1.2 contains basics operations, some advanced ones like calibration not yet implemented
+
+Pending stuff:
+
+- [ ] (De-)Activate Automatic Self-Calibration (ASC)
+- [ ] Set Forced Recalibration
+- [ ] Set Temperature Offset
+- [ ] Altitude Compensation
+- [ ] Soft reset
 
 ## Basic Example
 
-In your Cargo.toml `scd30_i2c="0.1.1"`
+In your Cargo.toml `scd30_i2c="0.1.2"`
 
 Obtaining measurements, co2, temperature and humidity
 
