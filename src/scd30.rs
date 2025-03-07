@@ -262,4 +262,72 @@ impl Scd30 {
             Err(_) => Err(Scd30Error::ComunicationError),
         }
     }
+
+    pub fn get_self_calibration_status(&mut self) -> Result<bool, Scd30Error> {
+        let buffer: [u8; 2] = [0x53, 0x06];
+        match self.i2cdev.write(&buffer) {
+            Ok(_) => {
+                let thirty_millis = time::Duration::from_millis(30);
+                thread::sleep(thirty_millis);
+                let mut data_buffer: [u8; 3] = [0; 3];
+                match self.i2cdev.read(&mut data_buffer) {
+                    Ok(_) => {
+                        if Scd30::crc8(&vec![data_buffer[0], data_buffer[1]]) == data_buffer[2] {
+                            if data_buffer[1] == 0x01 {
+                                Ok(true)
+                            } else {
+                                Ok(false)
+                            }
+                        } else {
+                            Err(Scd30Error::ChecksumError)
+                        }
+                    }
+                    Err(_) => Err(Scd30Error::ComunicationError),
+                }
+            }
+            Err(_) => Err(Scd30Error::ComunicationError),
+        }
+    }
+
+    pub fn set_self_calibration(&mut self) -> Result<bool, Scd30Error> {
+        let buffer: [u8; 2] = [0x53, 0x06];
+        match self.i2cdev.write(&buffer) {
+            Ok(_) => {
+                let thirty_millis = time::Duration::from_millis(30);
+                thread::sleep(thirty_millis);
+                let mut data_buffer: [u8; 3] = [0; 3];
+                match self.i2cdev.read(&mut data_buffer) {
+                    Ok(_) => {
+                        if Scd30::crc8(&vec![data_buffer[0], data_buffer[1]]) == data_buffer[2] {
+                            if data_buffer[1] == 0x01 {
+                                Ok(true)
+                            } else {
+                                Ok(false)
+                            }
+                        } else {
+                            Err(Scd30Error::ChecksumError)
+                        }
+                    }
+                    Err(_) => Err(Scd30Error::ComunicationError),
+                }
+            }
+            Err(_) => Err(Scd30Error::ComunicationError),
+        }
+    }
+
+    /// Soft reset the sensor device.
+    /// If fails, return SCD30Error.
+    ///
+    pub fn soft_reset(&mut self) -> Result<(), Scd30Error> {
+        let buffer: [u8; 2] = [0xd3, 0x04];
+        match self.i2cdev.write(&buffer) {
+            Ok(_) => {
+                let ten_millis = time::Duration::from_millis(30);
+                thread::sleep(ten_millis);
+                Ok(())
+            }
+
+            Err(_) => Err(Scd30Error::ComunicationError),
+        }
+    }
 }
