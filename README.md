@@ -11,7 +11,7 @@ Pending stuff:
 - [ ] Set Forced Recalibration
 - [ ] Set Temperature Offset
 - [ ] Altitude Compensation
-- [ ] Soft reset
+- [x] Soft reset
 
 ## Basic Example
 
