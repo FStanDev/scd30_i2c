@@ -330,4 +330,57 @@ impl Scd30 {
             Err(_) => Err(Scd30Error::ComunicationError),
         }
     }
+
+    /// Checks the set altitude of the device.
+    /// If fails, return SCD30Error.
+    /// Else returns the altitue in meters from sea level (0 meters).
+    ///
+    pub fn check_altitude(&mut self) -> Result<u16, Scd30Error> {
+        let buffer: [u8; 2] = [0x51, 0x02];
+        match self.i2cdev.write(&buffer) {
+            Ok(_) => {
+                let ten_millis = time::Duration::from_millis(30);
+                thread::sleep(ten_millis);
+                // Read data from the selected register
+                let mut data_buffer: [u8; 3] = [0; 3];
+                match self.i2cdev.read(&mut data_buffer) {
+                    Ok(_) => {
+                        if data_buffer[2] == Scd30::crc8(&vec![data_buffer[0], data_buffer[1]]) {
+                            Ok(u16::from_be_bytes([data_buffer[0], data_buffer[1]]))
+                        } else {
+                            Err(Scd30Error::ChecksumError)
+                        }
+                    }
+                    Err(_) => Err(Scd30Error::ComunicationError),
+                }
+            }
+
+            Err(_) => Err(Scd30Error::ComunicationError),
+        }
+    }
+
+    /// Sets the altitude for the device.
+    /// Altitude is a u16 in meters starting from sea level (0 meters)
+    /// If fails returns SCD30Error,
+    /// else return nothing.
+    /// After the set you can check the saved value to be the same as expected
+    pub fn set_altitude(&mut self, altitude: u16) -> Result<(), Scd30Error> {
+        let altitude_in_bytes: [u8; 2] = altitude.to_be_bytes();
+        let checksum = Scd30::crc8(&vec![altitude_in_bytes[0], altitude_in_bytes[1]]);
+        let buffer: [u8; 5] = [
+            0x51,
+            0x02,
+            altitude_in_bytes[0],
+            altitude_in_bytes[1],
+            checksum,
+        ];
+        match self.i2cdev.write(&buffer) {
+            Ok(_) => {
+                let ten_millis = time::Duration::from_millis(30);
+                thread::sleep(ten_millis);
+                Ok(())
+            }
+            Err(_) => Err(Scd30Error::ComunicationError),
+        }
+    }
 }
