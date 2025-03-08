@@ -332,11 +332,11 @@ impl Scd30 {
         }
     }
 
-    /// Checks the set altitude of the device.
+    /// Gets the set altitude of the device.
     /// If fails, return SCD30Error.
     /// Else returns the altitue in meters from sea level (0 meters).
     ///
-    pub fn check_altitude(&mut self) -> Result<u16, Scd30Error> {
+    pub fn get_altitude(&mut self) -> Result<u16, Scd30Error> {
         let buffer: [u8; 2] = [0x51, 0x02];
         match self.i2cdev.write(&buffer) {
             Ok(_) => {
@@ -385,11 +385,11 @@ impl Scd30 {
         }
     }
 
-    /// Checks the temperature offset of the device.
+    /// Gets the temperature offset of the device.
     /// If fails, return SCD30Error.
     /// Else returns the temperature offset in shif ticks, each tick 0.01 Celsius.
     ///
-    pub fn check_temperature_offset(&mut self) -> Result<u16, Scd30Error> {
+    pub fn get_temperature_offset(&mut self) -> Result<u16, Scd30Error> {
         let buffer: [u8; 2] = [0x54, 0x03];
         match self.i2cdev.write(&buffer) {
             Ok(_) => {
