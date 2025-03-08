@@ -8,7 +8,7 @@ Current version 0.1.2 contains basics operations, some advanced ones like calibr
 Pending stuff:
 
 - [ ] (De-)Activate Automatic Self-Calibration (ASC)
-- [ ] Set Forced Recalibration
+- [x] Set Forced Recalibration
 - [x] Set Temperature Offset
 - [x] Altitude Compensation
 - [x] Soft reset

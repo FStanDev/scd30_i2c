@@ -430,4 +430,56 @@ impl Scd30 {
             Err(_) => Err(Scd30Error::ComunicationError),
         }
     }
+
+    /// Checks the forced calibration value of the device.
+    /// If fails, return SCD30Error.
+    /// Else returns the forced value in ppm units.
+    ///
+    pub fn get_forced_value(&mut self) -> Result<u16, Scd30Error> {
+        let buffer: [u8; 2] = [0x52, 0x04];
+        match self.i2cdev.write(&buffer) {
+            Ok(_) => {
+                let ten_millis = time::Duration::from_millis(30);
+                thread::sleep(ten_millis);
+                // Read data from the selected register
+                let mut data_buffer: [u8; 3] = [0; 3];
+                match self.i2cdev.read(&mut data_buffer) {
+                    Ok(_) => {
+                        if data_buffer[2] == Scd30::crc8(&vec![data_buffer[0], data_buffer[1]]) {
+                            Ok(u16::from_be_bytes([data_buffer[0], data_buffer[1]]))
+                        } else {
+                            Err(Scd30Error::ChecksumError)
+                        }
+                    }
+                    Err(_) => Err(Scd30Error::ComunicationError),
+                }
+            }
+
+            Err(_) => Err(Scd30Error::ComunicationError),
+        }
+    }
+
+    /// Sets a force recalibration value to the device.
+    /// Usually this is use when no time for automatic self calibration is posible.
+    /// If fails returns SCD30Error,
+    /// else return nothing.
+    pub fn set_force_recalibration_value(&mut self, forced_value: u16) -> Result<(), Scd30Error> {
+        let forced_value_in_bytes: [u8; 2] = forced_value.to_be_bytes();
+        let checksum = Scd30::crc8(&vec![forced_value_in_bytes[0], forced_value_in_bytes[1]]);
+        let buffer: [u8; 5] = [
+            0x52,
+            0x04,
+            forced_value_in_bytes[0],
+            forced_value_in_bytes[1],
+            checksum,
+        ];
+        match self.i2cdev.write(&buffer) {
+            Ok(_) => {
+                let ten_millis = time::Duration::from_millis(30);
+                thread::sleep(ten_millis);
+                Ok(())
+            }
+            Err(_) => Err(Scd30Error::ComunicationError),
+        }
+    }
 }
