@@ -19,7 +19,7 @@ In your Cargo.toml `scd30_i2c="0.1.2"`
 
 Obtaining measurements, co2, temperature and humidity
 
-```
+```rust
 use scd30_i2c::scd30::Scd30;
 use std::thread;
 use std::time::Duration;
