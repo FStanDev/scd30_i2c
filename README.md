@@ -10,7 +10,7 @@ Pending stuff:
 - [ ] (De-)Activate Automatic Self-Calibration (ASC)
 - [ ] Set Forced Recalibration
 - [ ] Set Temperature Offset
-- [ ] Altitude Compensation
+- [x] Altitude Compensation
 - [x] Soft reset
 
 ## Basic Example
