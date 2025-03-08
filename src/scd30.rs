@@ -262,7 +262,7 @@ impl Scd30 {
             Err(_) => Err(Scd30Error::ComunicationError),
         }
     }
-
+    //WIP
     pub fn get_self_calibration_status(&mut self) -> Result<bool, Scd30Error> {
         let buffer: [u8; 2] = [0x53, 0x06];
         match self.i2cdev.write(&buffer) {
@@ -289,6 +289,7 @@ impl Scd30 {
         }
     }
 
+    //WIP
     pub fn set_self_calibration(&mut self) -> Result<bool, Scd30Error> {
         let buffer: [u8; 2] = [0x53, 0x06];
         match self.i2cdev.write(&buffer) {
@@ -374,6 +375,52 @@ impl Scd30 {
             altitude_in_bytes[1],
             checksum,
         ];
+        match self.i2cdev.write(&buffer) {
+            Ok(_) => {
+                let ten_millis = time::Duration::from_millis(30);
+                thread::sleep(ten_millis);
+                Ok(())
+            }
+            Err(_) => Err(Scd30Error::ComunicationError),
+        }
+    }
+
+    /// Checks the temperature offset of the device.
+    /// If fails, return SCD30Error.
+    /// Else returns the temperature offset in shif ticks, each tick 0.01 Celsius.
+    ///
+    pub fn check_temperature_offset(&mut self) -> Result<u16, Scd30Error> {
+        let buffer: [u8; 2] = [0x54, 0x03];
+        match self.i2cdev.write(&buffer) {
+            Ok(_) => {
+                let ten_millis = time::Duration::from_millis(30);
+                thread::sleep(ten_millis);
+                // Read data from the selected register
+                let mut data_buffer: [u8; 3] = [0; 3];
+                match self.i2cdev.read(&mut data_buffer) {
+                    Ok(_) => {
+                        if data_buffer[2] == Scd30::crc8(&vec![data_buffer[0], data_buffer[1]]) {
+                            Ok(u16::from_be_bytes([data_buffer[0], data_buffer[1]]))
+                        } else {
+                            Err(Scd30Error::ChecksumError)
+                        }
+                    }
+                    Err(_) => Err(Scd30Error::ComunicationError),
+                }
+            }
+
+            Err(_) => Err(Scd30Error::ComunicationError),
+        }
+    }
+
+    /// Sets the temperature offset of the device.
+    /// Offset is a u16 correspoding to one tick, each tick is 0.01 Celsius of offset
+    /// If fails returns SCD30Error,
+    /// else return nothing.
+    pub fn set_temperature_offset(&mut self, offset: u16) -> Result<(), Scd30Error> {
+        let offset_in_bytes: [u8; 2] = offset.to_be_bytes();
+        let checksum = Scd30::crc8(&vec![offset_in_bytes[0], offset_in_bytes[1]]);
+        let buffer: [u8; 5] = [0x54, 0x03, offset_in_bytes[0], offset_in_bytes[1], checksum];
         match self.i2cdev.write(&buffer) {
             Ok(_) => {
                 let ten_millis = time::Duration::from_millis(30);
