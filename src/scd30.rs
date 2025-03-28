@@ -262,7 +262,8 @@ impl Scd30 {
             Err(_) => Err(Scd30Error::ComunicationError),
         }
     }
-    //WIP
+    /// Gets if the devive is in self calibration procedure or not. In case it fails,
+    /// returns and SCD30 error
     pub fn get_self_calibration_status(&mut self) -> Result<bool, Scd30Error> {
         let buffer: [u8; 2] = [0x53, 0x06];
         match self.i2cdev.write(&buffer) {
@@ -289,28 +290,20 @@ impl Scd30 {
         }
     }
 
-    //WIP
-    pub fn set_self_calibration(&mut self) -> Result<bool, Scd30Error> {
-        let buffer: [u8; 2] = [0x53, 0x06];
+    ///Set self calibration configuration. In this configuration, the device
+    /// will start the process of self calibration, will take 7 days and requires at least
+    /// 1 hour of fresh air per day, after that, the found value will be setted in non
+    /// volatile memory.
+    /// If fails returns communication errors, else returns nothing
+    pub fn set_self_calibration(&mut self, active: bool) -> Result<(), Scd30Error> {
+        let activate_function = if active { 0x01 } else { 0x00 };
+        let checksum = Scd30::crc8(&vec![0x00, activate_function]);
+        let buffer: [u8; 5] = [0x53, 0x06, 0x00, activate_function, checksum];
         match self.i2cdev.write(&buffer) {
             Ok(_) => {
-                let thirty_millis = time::Duration::from_millis(30);
-                thread::sleep(thirty_millis);
-                let mut data_buffer: [u8; 3] = [0; 3];
-                match self.i2cdev.read(&mut data_buffer) {
-                    Ok(_) => {
-                        if Scd30::crc8(&vec![data_buffer[0], data_buffer[1]]) == data_buffer[2] {
-                            if data_buffer[1] == 0x01 {
-                                Ok(true)
-                            } else {
-                                Ok(false)
-                            }
-                        } else {
-                            Err(Scd30Error::ChecksumError)
-                        }
-                    }
-                    Err(_) => Err(Scd30Error::ComunicationError),
-                }
+                let ten_millis = time::Duration::from_millis(30);
+                thread::sleep(ten_millis);
+                Ok(())
             }
             Err(_) => Err(Scd30Error::ComunicationError),
         }
