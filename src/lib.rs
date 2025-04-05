@@ -8,16 +8,7 @@
 //! SCD30 trait implementing basic SCD30 I2C CO2 sensor operations
 //!
 //! Operations taken from [interface description](https://sensirion.com/media/documents/D7CEEF4A/6165372F/Sensirion_CO2_Sensors_SCD30_Interface_Description.pdf)
-//! //! **IMPORTANT**
-//! Current version 0.1.2 contains basics operations, some advanced ones like calibration not yet implemented
-//! Pending stuff:
-//!
-//! - [ ] (De-)Activate Automatic Self-Calibration (ASC)
-//! - [ ] Set Forced Recalibration
-//! - [ ] Set Temperature Offset
-//! - [ ] Altitude Compensation
-//! - [ ] Soft reset
-//!
+//! At current version 1.0.0 we support all basic operations from the interface
 //! ## Basic Example
 //!
 //! Obtaining measurements, co2, temperature and humidity
